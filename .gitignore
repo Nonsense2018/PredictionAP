@@ -1,0 +1,19 @@
+# Virtual environment
+venv/
+
+# Environment variables
+.env
+
+# Raw data (never commit large datasets)
+data/raw/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Model artifacts
+results/models/
+
+# Logs
+results/logs/.DS_Store
+.claude/

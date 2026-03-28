@@ -1,0 +1,4 @@
+county,date,temperature_2m_mean,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max
+Fresno,2024-01-01,14,20,8,0.0,18
+Fresno,2024-01-02,16,22,10,0.0,20
+Kern,2024-01-01,12,18,6,0.1,16

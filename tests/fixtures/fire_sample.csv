@@ -1,0 +1,4 @@
+county,date,fire_event_count_radius,smoke_present,min_fire_distance_km,fire_radius_km
+Fresno,2024-01-01,1,1,24.5,150
+Fresno,2024-01-02,0,0,210.2,150
+Kern,2024-01-01,2,1,15.4,150

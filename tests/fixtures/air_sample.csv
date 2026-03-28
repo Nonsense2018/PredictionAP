@@ -1,0 +1,4 @@
+county,date,aqi_mean,aqi_max,pm25_mean,pm25_max,observation_count
+Fresno,2024-01-01,80,95,15,22,4
+Fresno,2024-01-02,120,135,28,34,4
+Kern,2024-01-01,90,105,18,25,4

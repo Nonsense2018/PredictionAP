@@ -1,0 +1,4 @@
+county,date,aqi_mean,temperature_2m_mean,fire_event_count_radius
+Fresno,2024-01-01,80,14,1
+Fresno,2024-01-02,120,16,0
+Kern,2024-01-01,90,12,2

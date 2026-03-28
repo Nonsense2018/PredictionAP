@@ -1,0 +1,12 @@
+pandas
+numpy
+requests
+python-dotenv
+geopandas
+scikit-learn
+joblib
+pytest
+matplotlib
+seaborn
+xgboost
+lightgbm
