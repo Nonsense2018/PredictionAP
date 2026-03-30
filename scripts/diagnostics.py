@@ -105,7 +105,7 @@ def check_raw_air():
         yr_counts = df["request_date"].dt.year.value_counts().sort_index()
         info("Rows per year:")
         for yr, cnt in yr_counts.items():
-            flag = "" if cnt > 500 else "  ← LOW"
+            flag = "" if cnt > 500 else "  <- LOW"
             info(f"  {yr}: {cnt:,} rows{flag}")
     else:
         warn("No request_date column — cannot check year coverage.")
@@ -128,7 +128,7 @@ def check_processed_air():
     df = pd.read_csv(PROC_AIR_PATH)
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     info(f"Total rows: {len(df):,}")
-    info(f"Date range: {df['date'].min().date()} → {df['date'].max().date()}")
+    info(f"Date range: {df['date'].min().date()} -> {df['date'].max().date()}")
     info(f"Counties present: {sorted(df['county'].unique())}")
 
     print()
@@ -147,7 +147,7 @@ def check_processed_air():
     info("Rows per year (all counties combined):")
     yr_counts = df["date"].dt.year.value_counts().sort_index()
     for yr, cnt in yr_counts.items():
-        flag = "" if cnt > 1000 else "  ← LOW"
+        flag = "" if cnt > 1000 else "  <- LOW"
         info(f"  {yr}: {cnt:,}{flag}")
 
 
@@ -163,7 +163,7 @@ def check_other_datasets():
         df["date"] = pd.to_datetime(df["date"], errors="coerce")
         counties = sorted(df["county"].unique())
         missing = [c for c in EXPECTED_COUNTIES if c not in counties]
-        info(f"{label}: {len(df):,} rows | {df['date'].min().date()} → {df['date'].max().date()}")
+        info(f"{label}: {len(df):,} rows | {df['date'].min().date()} -> {df['date'].max().date()}")
         info(f"  Counties: {counties}")
         if missing:
             warn(f"  Missing counties: {missing}")
@@ -182,7 +182,7 @@ def check_features():
     df = pd.read_csv(FEATURES_PATH)
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     info(f"Total rows: {len(df):,}")
-    info(f"Date range: {df['date'].min().date()} → {df['date'].max().date()}")
+    info(f"Date range: {df['date'].min().date()} -> {df['date'].max().date()}")
     info(f"Counties: {sorted(df['county'].unique())}")
     info(f"Columns: {df.columns.tolist()}")
 
@@ -201,8 +201,8 @@ def test_airnow_bbox(api_key: str, centroids: pd.DataFrame):
     test_date = "2022-08-15"   # peak wildfire season — best chance of data
 
     print()
-    info(f"Testing bbox sizes {BBOX_SIZES}° for each county on {test_date}:")
-    info(f"{'County':<14} {'0.25°':>8} {'0.50°':>8} {'1.00°':>8}  Notes")
+    info(f"Testing bbox sizes {BBOX_SIZES}deg for each county on {test_date}:")
+    info(f"{'County':<14} {'0.25deg':>8} {'0.50deg':>8} {'1.00deg':>8}  Notes")
     info(SEP2)
 
     results = {}
@@ -236,9 +236,9 @@ def test_airnow_bbox(api_key: str, centroids: pd.DataFrame):
         if counts[0] == 0 and counts[1] == 0 and counts[2] == 0:
             notes = "NO STATIONS — genuinely uncovered"
         elif counts[0] == 0 and counts[1] > 0:
-            notes = f"Needs bbox ≥ 0.5° to find stations"
+            notes = f"Needs bbox >= 0.5deg to find stations"
         elif counts[0] == 0 and counts[2] > 0:
-            notes = f"Needs bbox ≥ 1.0° to find stations"
+            notes = f"Needs bbox >= 1.0deg to find stations"
         elif counts[0] > 0:
             notes = "OK at default bbox"
 
@@ -271,7 +271,7 @@ def print_fix_prompts(bbox_results: dict | None):
         print()
         info("Option B — Accept the 5-county dataset as-is")
         info("  Document as a limitation: Kern, Kings, Madera had no AirNow")
-        info("  monitoring stations within ±0.25° of county centroid coordinates.")
+        info("  monitoring stations within ±0.25deg of county centroid coordinates.")
         info("  This is common in rural CA counties.")
 
     print()

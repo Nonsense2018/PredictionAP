@@ -106,7 +106,7 @@ def _save(fig: plt.Figure, path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, dpi=160, bbox_inches="tight", facecolor="white")
     plt.close(fig)
-    print(f"  Saved → {path.relative_to(PROJECT_ROOT)}")
+    print(f"  Saved: {path.relative_to(PROJECT_ROOT)}")
 
 
 def _season(month: int) -> str:
