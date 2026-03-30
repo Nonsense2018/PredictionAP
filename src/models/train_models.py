@@ -48,6 +48,14 @@ try:
 except Exception:
     _LGBM_AVAILABLE = False
 
+try:
+    from prophet import Prophet as _Prophet
+    import logging as _logging
+    _logging.getLogger("cmdstanpy").setLevel(_logging.WARNING)
+    _PROPHET_AVAILABLE = True
+except Exception:
+    _PROPHET_AVAILABLE = False
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
@@ -59,7 +67,7 @@ from src.utils.date_config import get_train_val_test_ranges
 FEATURES_PATH = PROJECT_ROOT / "data" / "processed" / "modeling" / "features_dataset.csv"
 MODELS_DIR = PROJECT_ROOT / "results" / "models"
 
-EXCEEDANCE_THRESHOLD = 120
+EXCEEDANCE_THRESHOLD = 100  # EPA "Unhealthy for Sensitive Groups" — school outdoor activity restriction proxy
 
 
 # ---------------------------------------------------------------------------
@@ -235,6 +243,79 @@ def main() -> None:
             persist_cls = (df_s[persistence_col].values >= EXCEEDANCE_THRESHOLD).astype(int)
             m = _metrics_classification(y_s, persist_cls, None)
             all_metrics_rows.append({"split": split_name, "task": "classification", "model": "persistence", **m})
+
+    # ------------------------------------------------------------------
+    # Prophet: per-county time-series model
+    # ------------------------------------------------------------------
+    if _PROPHET_AVAILABLE:
+        prophet_reg_preds: dict[str, np.ndarray] = {}   # date -> predicted AQI
+        prophet_reg_actual: dict[str, np.ndarray] = {}
+
+        all_prophet_val_pred_reg = []
+        all_prophet_val_true_reg = []
+        all_prophet_test_pred_reg = []
+        all_prophet_test_true_reg = []
+        all_prophet_val_pred_cls = []
+        all_prophet_val_true_cls = []
+        all_prophet_test_pred_reg_raw = []  # for prob threshold
+        all_prophet_test_pred_cls = []
+        all_prophet_test_true_cls = []
+
+        counties = model_frame["county"].unique()
+        for county in counties:
+            county_df = model_frame[model_frame["county"] == county].copy()
+            c_train = county_df[(county_df["date"] >= train_start) & (county_df["date"] <= train_end)]
+            c_val   = county_df[(county_df["date"] >= val_start)   & (county_df["date"] <= val_end)]
+            c_test  = county_df[(county_df["date"] >= test_start)  & (county_df["date"] <= test_end)]
+
+            if len(c_train) < 10 or c_val.empty or c_test.empty:
+                continue
+
+            prophet_train = c_train[["date", "aqi_mean"]].rename(columns={"date": "ds", "aqi_mean": "y"})
+            m = _Prophet(yearly_seasonality=True, weekly_seasonality=False,
+                         daily_seasonality=False, seasonality_mode="additive",
+                         changepoint_prior_scale=0.05)
+            m.fit(prophet_train)
+
+            for split_name, c_split, pred_list, true_list, cls_pred_list, cls_true_list in [
+                ("validation", c_val,
+                 all_prophet_val_pred_reg, all_prophet_val_true_reg,
+                 all_prophet_val_pred_cls, all_prophet_val_true_cls),
+                ("test", c_test,
+                 all_prophet_test_pred_reg, all_prophet_test_true_reg,
+                 all_prophet_test_pred_cls, all_prophet_test_true_cls),
+            ]:
+                future = c_split[["date"]].rename(columns={"date": "ds"})
+                fc = m.predict(future)
+                preds_reg = fc["yhat"].values
+                preds_cls = (preds_reg >= EXCEEDANCE_THRESHOLD).astype(int)
+                true_reg  = c_split["target_next_day_aqi"].values
+                true_cls  = c_split["target_next_day_exceedance"].values
+
+                pred_list.extend(preds_reg.tolist())
+                true_list.extend(true_reg.tolist())
+                cls_pred_list.extend(preds_cls.tolist())
+                cls_true_list.extend(true_cls.tolist())
+
+        for split_name, pred_reg, true_reg, pred_cls, true_cls in [
+            ("validation",
+             all_prophet_val_pred_reg, all_prophet_val_true_reg,
+             all_prophet_val_pred_cls, all_prophet_val_true_cls),
+            ("test",
+             all_prophet_test_pred_reg, all_prophet_test_true_reg,
+             all_prophet_test_pred_cls, all_prophet_test_true_cls),
+        ]:
+            if not pred_reg:
+                continue
+            m_reg = _metrics_regression(pd.Series(true_reg), np.array(pred_reg))
+            all_metrics_rows.append({"split": split_name, "task": "regression", "model": "prophet", **m_reg})
+
+            m_cls = _metrics_classification(
+                pd.Series(true_cls), np.array(pred_cls), np.array(pred_reg)
+            )
+            all_metrics_rows.append({"split": split_name, "task": "classification", "model": "prophet", **m_cls})
+    else:
+        print("Prophet skipped (not installed — run `pip install prophet` to enable).")
 
     # ------------------------------------------------------------------
     # Save artifacts

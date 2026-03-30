@@ -10,7 +10,7 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MERGED_PATH = PROJECT_ROOT / "data" / "processed" / "modeling" / "merged_daily_county.csv"
 OUTPUT_PATH = PROJECT_ROOT / "data" / "processed" / "modeling" / "features_dataset.csv"
-EXCEEDANCE_THRESHOLD = 120
+EXCEEDANCE_THRESHOLD = 100  # AQI >= 100 (EPA "Unhealthy for Sensitive Groups" — school outdoor activity restriction proxy)
 
 
 def main() -> None:
