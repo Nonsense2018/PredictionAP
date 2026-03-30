@@ -247,7 +247,7 @@ def main() -> None:
     # ------------------------------------------------------------------
     # Prophet: per-county time-series model
     # ------------------------------------------------------------------
-    if _PROPHET_AVAILABLE:
+    if _PROPHET_AVAILABLE and "aqi_mean" in model_frame.columns:
         prophet_reg_preds: dict[str, np.ndarray] = {}   # date -> predicted AQI
         prophet_reg_actual: dict[str, np.ndarray] = {}
 
