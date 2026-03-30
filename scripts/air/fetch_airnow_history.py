@@ -47,6 +47,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--start-date", type=str, default=None, help="Override start date (YYYY-MM-DD)")
     parser.add_argument("--end-date", type=str, default=None, help="Override end date (YYYY-MM-DD)")
     parser.add_argument("--append", action="store_true", help="Append to existing raw records instead of overwriting")
+    parser.add_argument("--bbox", type=float, default=None,
+                        help="Override bbox half-size in degrees for ALL counties (e.g. 0.5). "
+                             "Use --county-bbox for per-county overrides.")
+    parser.add_argument("--county-bbox", type=str, default=None,
+                        help="Per-county bbox overrides as JSON, e.g. '{\"Kern\":0.5,\"Kings\":1.0,\"Madera\":0.5}'")
     return parser.parse_args()
 
 
@@ -84,9 +89,9 @@ def load_centroids() -> pd.DataFrame:
     return centroids
 
 
-def build_params(api_key: str, latitude: float, longitude: float, day: date) -> dict[str, str]:
+def build_params(api_key: str, latitude: float, longitude: float, day: date,
+                 bbox_half_size: float = 0.25) -> dict[str, str]:
     """Build AirNow request parameters for one county/day bbox."""
-    bbox_half_size = 0.25
     min_lon = longitude - bbox_half_size
     min_lat = latitude - bbox_half_size
     max_lon = longitude + bbox_half_size
@@ -113,13 +118,14 @@ def fetch_county_records_for_day(
     latitude: float,
     longitude: float,
     day: date,
+    bbox_half_size: float = 0.25,
 ) -> pd.DataFrame:
     """Fetch AirNow records for one county centroid bbox and one day.
 
     Retries up to MAX_RETRIES times on HTTP 429 (rate limit) with exponential backoff.
     All other HTTP errors are re-raised immediately.
     """
-    params = build_params(api_key, latitude, longitude, day)
+    params = build_params(api_key, latitude, longitude, day, bbox_half_size)
     wait = BASE_WAIT_SECONDS
 
     for attempt in range(1, MAX_RETRIES + 1):
@@ -222,23 +228,34 @@ def aggregate_daily_air(frame: pd.DataFrame) -> pd.DataFrame:
 
 def main() -> None:
     """Run historical AirNow collection and aggregation."""
+    import json as _json
     args = parse_args()
     api_key = load_api_key()
     start_date, end_date = get_date_range(args.start_date, args.end_date)
     centroids = load_centroids()
 
+    # Build per-county bbox lookup
+    county_bbox_override: dict[str, float] = {}
+    if args.county_bbox:
+        county_bbox_override = _json.loads(args.county_bbox)
+    default_bbox = args.bbox if args.bbox else 0.25
+
     print(f"Collecting AirNow data from {start_date} to {end_date}")
+    print(f"Default bbox half-size: {default_bbox}°")
+    if county_bbox_override:
+        print(f"Per-county bbox overrides: {county_bbox_override}")
 
     county_frames: list[pd.DataFrame] = []
     for row in centroids.itertuples(index=False):
         county = str(row.county)
         lat = float(row.latitude)
         lon = float(row.longitude)
+        bbox = county_bbox_override.get(county, default_bbox)
 
-        print(f"Fetching AirNow for {county}")
+        print(f"Fetching AirNow for {county} (bbox ±{bbox}°)")
         for day in iter_dates(start_date, end_date):
             try:
-                county_frame = fetch_county_records_for_day(api_key, county, lat, lon, day)
+                county_frame = fetch_county_records_for_day(api_key, county, lat, lon, day, bbox)
             except requests.RequestException as exc:
                 print(f"Request failed for {county} on {day.isoformat()}: {exc}")
                 county_frame = pd.DataFrame()
