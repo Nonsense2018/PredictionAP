@@ -27,7 +27,10 @@ def main() -> None:
     df["county"] = df["county"].astype(str).str.strip()
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df["aqi_mean"] = pd.to_numeric(df["aqi_mean"], errors="coerce")
+    # AirNow API uses -999 as a sentinel for missing readings; drop any rows where
+    # the daily mean was corrupted by averaging -999 values with real observations.
     df = df.dropna(subset=["county", "date", "aqi_mean"]).copy()
+    df = df[df["aqi_mean"] >= 0].copy()
     df = df.sort_values(["county", "date"]).reset_index(drop=True)
 
     grouped = df.groupby("county", group_keys=False)

@@ -15,7 +15,17 @@ from __future__ import annotations
 
 import json
 import sys
+import warnings
 from pathlib import Path
+
+# numpy 2.x + Apple Accelerate BLAS emits spurious "divide by zero / overflow in matmul"
+# RuntimeWarnings on macOS even when the computation is numerically correct.
+# Suppress them so they don't pollute training logs.
+warnings.filterwarnings(
+    "ignore",
+    message=r".*(divide by zero|overflow|invalid value).*",
+    category=RuntimeWarning,
+)
 
 import joblib
 import numpy as np
@@ -129,6 +139,7 @@ def main() -> None:
         if col not in excluded
         and pd.api.types.is_numeric_dtype(df[col])
         and df[col].notna().any()
+        and df[col].nunique() > 1  # drop constant columns (zero variance breaks StandardScaler)
     ]
     if not feature_cols:
         raise ValueError("No numeric feature columns available for model training.")
@@ -172,8 +183,10 @@ def main() -> None:
         ("random_forest", RandomForestRegressor(n_estimators=300, random_state=42, n_jobs=-1)),
     ]
     cls_models: list[tuple[str, object]] = [
-        ("logistic", _scaled(LogisticRegression(max_iter=1000, random_state=42))),
-        ("random_forest", RandomForestClassifier(n_estimators=300, random_state=42, n_jobs=-1)),
+        # class_weight='balanced' compensates for the ~3% exceedance rate; without it
+        # classifiers predict all-negative and achieve near-zero recall.
+        ("logistic", _scaled(LogisticRegression(max_iter=1000, random_state=42, class_weight="balanced"))),
+        ("random_forest", RandomForestClassifier(n_estimators=300, random_state=42, n_jobs=-1, class_weight="balanced")),
     ]
 
     if _XGBOOST_AVAILABLE:
@@ -181,7 +194,8 @@ def main() -> None:
                                                     verbosity=0, n_jobs=-1)))
         cls_models.append(("xgboost", XGBClassifier(n_estimators=300, random_state=42,
                                                      verbosity=0, use_label_encoder=False,
-                                                     eval_metric="logloss", n_jobs=-1)))
+                                                     eval_metric="logloss", n_jobs=-1,
+                                                     scale_pos_weight=int((y_train_cls == 0).sum() / max((y_train_cls == 1).sum(), 1)))))
     else:
         print("XGBoost skipped (libomp not installed — run `brew install libomp` to enable).")
 
@@ -189,7 +203,8 @@ def main() -> None:
         reg_models.append(("lightgbm", LGBMRegressor(n_estimators=300, random_state=42,
                                                       n_jobs=-1, verbose=-1)))
         cls_models.append(("lightgbm", LGBMClassifier(n_estimators=300, random_state=42,
-                                                       n_jobs=-1, verbose=-1)))
+                                                       n_jobs=-1, verbose=-1,
+                                                       class_weight="balanced")))
     else:
         print("LightGBM skipped (libomp not installed — run `brew install libomp` to enable).")
 
@@ -271,7 +286,14 @@ def main() -> None:
             if len(c_train) < 10 or c_val.empty or c_test.empty:
                 continue
 
-            prophet_train = c_train[["date", "aqi_mean"]].rename(columns={"date": "ds", "aqi_mean": "y"})
+            # Train Prophet on the same next-day target used by all other models so
+            # metrics are directly comparable.  Using aqi_mean here would cause a
+            # one-day offset (predicting AQI for date d vs. ground truth for d+1).
+            prophet_train = (
+                c_train[["date", "target_next_day_aqi"]]
+                .dropna()
+                .rename(columns={"date": "ds", "target_next_day_aqi": "y"})
+            )
             m = _Prophet(yearly_seasonality=True, weekly_seasonality=False,
                          daily_seasonality=False, seasonality_mode="additive",
                          changepoint_prior_scale=0.05)

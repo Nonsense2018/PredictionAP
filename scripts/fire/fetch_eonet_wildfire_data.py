@@ -145,8 +145,17 @@ def fetch_wildfire_events(start_date: date, end_date: date) -> pd.DataFrame:
 
     while True:
         params = {**base_params, "offset": offset}
-        response = requests.get(EONET_EVENTS_ENDPOINT, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
-        response.raise_for_status()
+        try:
+            response = requests.get(EONET_EVENTS_ENDPOINT, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            # On server-side errors (5xx), save whatever we already collected rather
+            # than discarding it all.  Client errors (4xx) are real failures.
+            status = exc.response.status_code if exc.response is not None else 0
+            if 500 <= status < 600:
+                print(f"  EONET returned {status} at offset {offset}; saving {len(all_rows)} events collected so far.")
+                break
+            raise
 
         payload = response.json()
         events = payload.get("events", [])

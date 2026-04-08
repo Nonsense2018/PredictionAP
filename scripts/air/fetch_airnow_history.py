@@ -208,6 +208,8 @@ def aggregate_daily_air(frame: pd.DataFrame) -> pd.DataFrame:
         aqi_values = group.loc[pm_mask.loc[group.index], "AQI"].dropna()
         if aqi_values.empty:
             aqi_values = group["AQI"].dropna()
+        # AirNow API returns -999 as a sentinel for "no valid reading"; exclude these.
+        aqi_values = aqi_values[aqi_values >= 0]
 
         pm_values = group.loc[pm_mask.loc[group.index], "RawConcentration"].dropna()
 

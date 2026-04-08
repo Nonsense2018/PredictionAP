@@ -1,0 +1,72 @@
+
+=== Merced (2018-01-01 to 2020-12-31, bbox ±0.5) ===
+  2018-04-10: fetched=100 skipped=0 records=4501
+  2018-07-19: fetched=200 skipped=0 records=9300
+  2018-10-27: fetched=300 skipped=0 records=14097
+  2019-02-04: fetched=400 skipped=0 records=18603
+  2019-05-15: fetched=500 skipped=0 records=23363
+  FAILED: 2019-05-16
+  2019-05-16: fetched=500 skipped=0 records=23363
+  FAILED: 2019-05-17
+  2019-05-17: fetched=500 skipped=0 records=23363
+  FAILED: 2019-05-18
+  2019-05-18: fetched=500 skipped=0 records=23363
+  FAILED: 2019-05-19
+  2019-05-19: fetched=500 skipped=0 records=23363
+  FAILED: 2019-05-20
+  2019-05-20: fetched=500 skipped=0 records=23363
+  FAILED: 2019-05-21
+  2019-05-21: fetched=500 skipped=0 records=23363
+  FAILED: 2019-05-22
+  2019-05-22: fetched=500 skipped=0 records=23363
+  FAILED: 2019-05-23
+  2019-05-23: fetched=500 skipped=0 records=23363
+  FAILED: 2019-05-24
+  2019-05-24: fetched=500 skipped=0 records=23363
+  2019-09-01: fetched=600 skipped=0 records=28160
+  2019-12-10: fetched=700 skipped=0 records=32954
+  2020-03-19: fetched=800 skipped=0 records=37658
+  2020-06-27: fetched=900 skipped=0 records=42426
+  2020-10-05: fetched=1000 skipped=0 records=47219
+  DONE: 1087 fetched, 0 skipped, 9 failed
+
+=== San Joaquin (2018-01-01 to 2021-12-31, bbox ±1.0) ===
+  2018-04-10: fetched=2 skipped=98 records=52456
+  2018-07-19: fetched=9 skipped=191 records=56505
+  2018-10-27: fetched=30 skipped=270 records=68072
+  2019-02-04: fetched=78 skipped=322 records=96525
+  2019-05-15: fetched=111 skipped=389 records=116780
+  2019-08-23: fetched=113 skipped=487 records=117979
+  2019-12-01: fetched=127 skipped=573 records=125984
+  FAILED: 2020-02-16
+  FAILED: 2020-02-17
+  FAILED: 2020-02-18
+  FAILED: 2020-02-19
+  FAILED: 2020-02-20
+  FAILED: 2020-02-21
+  FAILED: 2020-02-22
+  2020-03-17: fetched=215 skipped=585 records=174040
+  2020-06-25: fetched=308 skipped=592 records=226992
+  2020-10-03: fetched=407 skipped=593 records=283545
+  2021-01-11: fetched=507 skipped=593 records=341006
+  2021-04-21: fetched=607 skipped=593 records=404469
+  2021-07-30: fetched=705 skipped=595 records=466910
+  2021-11-07: fetched=739 skipped=661 records=488756
+  DONE: 739 fetched, 715 skipped, 16 failed
+
+=== Tulare (2018-01-01 to 2018-12-31, bbox ±0.5) ===
+  2018-04-10: fetched=100 skipped=0 records=493364
+  2018-07-19: fetched=200 skipped=0 records=498080
+  2018-10-27: fetched=300 skipped=0 records=501776
+  DONE: 357 fetched, 8 skipped, 16 failed
+
+Total records collected: 506713
+Failed days: 16
+Saved 2183 new county-days. Total rows: 18976
+
+Final coverage:
+year         2018  2019  2020  2021  2022  2023  2024
+county                                               
+Merced        365   356   366   325   348   334   336
+San Joaquin   365   365   359   365   328   362   327
+Tulare        365   221   235   205   320   268   262
