@@ -61,13 +61,13 @@ def strip(source: str) -> str:
             continue
         output.append(line)
 
-    # Collapse runs of more than 2 blank lines
+    # Collapse consecutive blank lines — keep at most 1
     cleaned: list[str] = []
     blanks = 0
     for line in output:
         if line.strip() == "":
             blanks += 1
-            if blanks <= 2:
+            if blanks <= 1:
                 cleaned.append(line)
         else:
             blanks = 0
@@ -127,7 +127,14 @@ def add_page_numbers(doc: Document) -> None:
         run._r.append(el)
 
 
+def tight(para) -> None:
+    para.paragraph_format.space_before = Pt(0)
+    para.paragraph_format.space_after  = Pt(0)
+    para.paragraph_format.line_spacing = Pt(12)
+
+
 def tnr(para, text: str, bold: bool = False, size: int = 12) -> None:
+    tight(para)
     run = para.add_run(text)
     run.bold           = bold
     run.font.name      = "Times New Roman"
@@ -157,14 +164,11 @@ def main() -> None:
         d = doc.add_paragraph()
         tnr(d, desc)
 
-        doc.add_paragraph()  # spacer
-
         # Stripped code
         code = strip(path.read_text(encoding="utf-8"))
         for line in code.splitlines():
             p = doc.add_paragraph()
-            p.paragraph_format.space_before = Pt(0)
-            p.paragraph_format.space_after  = Pt(0)
+            tight(p)
             run = p.add_run(line if line.strip() else " ")
             run.font.name = "Times New Roman"
             run.font.size = Pt(12)
